@@ -21,7 +21,12 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(
   cors({
-    origin: ["http://13.51.207.73:3000"],
+    origin: [
+      "http://localhost:5173", // Local development
+      "https://cozy-glam-frontend.vercel.app/", // Deployed frontend
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Specify allowed methods
+    credentials: true, // If you need to include cookies or authorization headers
   })
 );
 
