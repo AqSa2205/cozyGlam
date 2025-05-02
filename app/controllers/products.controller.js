@@ -14,21 +14,47 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Get all products
+
 exports.getAllProducts = async (req, res) => {
-  try {
-    const products = await Product.find()
-      .populate('seller_id', 'name email')
-      .populate('categories', 'name');
-    //   .populate('subcategories', 'name');
+    try {
+        
+        const page = parseInt(req.query.page) || 1; // Default to page 1
+        const limit = parseInt(req.query.limit) || 10; // Default to 10 items
+        const skipIndex = (page - 1) * limit;
 
-    return response.success(res, 'Product list fetched', {products});
-  } catch (error) {
-    console.error(error);
-    return response.serverError(res, 'Failed to fetch products');
-  }
+        const search = req.query.search || '';
+        const searchRegex = new RegExp(search, 'i');
+        const query = {
+        $or: [
+            { title: { $regex: searchRegex } },
+            { description: { $regex: searchRegex } }
+        ]
+        };
+        const products = await Product.find(query)
+        .sort({ created_at: -1 }) 
+        .skip(skipIndex)
+        .limit(limit)
+        .populate('seller_id', 'name email')
+        .populate('categories', 'name');
+
+        const totalProducts = await Product.countDocuments(query);
+        const totalPages = Math.ceil(totalProducts / limit);
+        return response.success(res, 'Product list fetched', {
+        products,
+        total: totalProducts,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+        
+        });
+    } catch (error) {
+        console.error(error);
+        return response.serverError(res, 'Failed to fetch products');
+    }
 };
+  
 
+  
 // Get product by ID
 exports.getProductById = async (req, res) => {
   try {

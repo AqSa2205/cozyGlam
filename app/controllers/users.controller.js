@@ -292,6 +292,6 @@ module.exports.signup = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     logger.error(`ip: ${req.ip}, url: ${req.url}, error: ${error.stack}`);
-    return response.serverError(res, "Something bad happened! Try Again Later");
+    return response.serverError(res, error.message, "Something bad happened! Try Again Later");
   }
 };
