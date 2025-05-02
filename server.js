@@ -22,7 +22,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(
   cors({
     origin: [
-      "http://localhost:3000"
+      "http://13.51.207.73:3000"
     ],
   })
 );
