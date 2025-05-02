@@ -11,8 +11,8 @@ const app = express();
 // parse requests of content-type - application/json
 app.use(express.json());
 
-app.set('view engine', 'html');
-app.engine('html', require('./app/views/indexView'))
+app.set("view engine", "html");
+app.engine("html", require("./app/views/indexView"));
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
@@ -21,14 +21,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(
   cors({
-    origin: [
-      "http://13.51.207.73:3000"
-    ],
+    origin: ["http://13.51.207.73:3000"],
   })
 );
-
-
-
 
 const port = process.env.PORT || 8052;
 
