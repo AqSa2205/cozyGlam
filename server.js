@@ -23,7 +23,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // Local development
-      "https://cozy-glam-frontend.vercel.app/", // Deployed frontend
+      "https://cozy-glam-frontend.vercel.app", // Deployed frontend
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Specify allowed methods
     credentials: true, // If you need to include cookies or authorization headers
