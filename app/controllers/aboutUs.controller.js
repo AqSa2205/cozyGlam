@@ -7,6 +7,7 @@ const response = require("../utils/responseHelpers");
 module.exports.getTeamData = async (req, res) => {
   try {
     const data = await Team.find();
+    console.log(data);
     return response.success(res, "Data retrieved successfully", { data });
   } catch (error) {
     console.error(error);
