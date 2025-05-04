@@ -14,8 +14,12 @@ const subCategorySchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    //default: "adbazaar"
   },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true
+    },
   isActive:{
     type: Boolean,
     default: true

@@ -8,6 +8,7 @@ const storeSchema = new mongoose.Schema({
   businessEmail: { type: String },
   businessPhone: { type: String },
   businessAddress: { type: String },
+  postcode: { type: String },
   country: { type: String },
   city: { type: String },
   state: { type: String },
