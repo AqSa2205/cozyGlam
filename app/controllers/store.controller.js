@@ -49,7 +49,7 @@ exports.createStore = async (req, res) => {
   }
 };
 
-exports.getAllStores = async (req, res) => {
+exports.getAllStore = async (req, res) => {
   try {
     const { search, isActive, isOnline } = req.query;
     let query = {};
@@ -76,7 +76,7 @@ exports.getAllStores = async (req, res) => {
         { userId: { $in: userIds } }
       ];
     }
-
+    console.log(userIds);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skipIndex = (page - 1) * limit;
@@ -107,8 +107,6 @@ exports.getAllStores = async (req, res) => {
 
 
 
-
-// Update store
 exports.updateStore = async (req, res) => {
   try {
     const { userId } = req.user;
