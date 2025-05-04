@@ -1,4 +1,5 @@
 const Store = require('../models/store');
+const User = require('../models/users');
 const response = require('../utils/responseHelpers');
 const mongoose = require('mongoose');
 
@@ -42,6 +43,9 @@ exports.createStore = async (req, res) => {
     });
 
     await newStore.save();
+
+    await User.findByIdAndUpdate(userId, { isStoreCreated: true });
+
     return response.success(res, 'Store created successfully', {newStore});
   } catch (error) {
     console.error(error);
@@ -68,7 +72,7 @@ exports.getAllStore = async (req, res) => {
           { _id: mongoose.Types.ObjectId.isValid(search) ? search : null }
         ]
       }).select('_id');
-
+      // const userIds =  req.user.id;
       const userIds = matchedUsers.map(user => user._id);
 
       query.$or = [
@@ -76,13 +80,13 @@ exports.getAllStore = async (req, res) => {
         { userId: { $in: userIds } }
       ];
     }
-    console.log(userIds);
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skipIndex = (page - 1) * limit;
 
     const stores = await Store.find(query)
-      .populate('userId', 'name email')
+      .populate('userId', 'name email phone_number')
       .sort({ createdAt: -1 })
       .skip(skipIndex)
       .limit(limit);

@@ -21,3 +21,4 @@ exports.handleImageUpload = async (req, res) => {
     return response.serverError(res, "Failed to upload image", error.message);
   }
 };
+

@@ -5,7 +5,7 @@ const verifyToken = require("../middleware/auth");
 
 
 category_router.post('/createcategories', [verifyToken], cc.createCategory);
-category_router.get('/allcategories', [verifyToken], cc.getAllCategories);
+category_router.get('/allcategories',  cc.getAllCategories);
 // category_router.get('/allcategoriesWEB', cc.getAllCategories);
 // category_router.get('/categoriesId/:id',[verifyToken], cc.getCategoryById);
 category_router.put('/update/:id',[verifyToken], cc.updateCategory);

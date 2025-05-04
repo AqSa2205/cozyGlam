@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 exports.createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
+    product.seller_id = req.user.id; // Assuming you have the seller ID from the token
     await product.save();
     return response.success(res, 'Product created successfully', {product});
   } catch (error) {
@@ -17,7 +18,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
     try {
-        
+
         const page = parseInt(req.query.page) || 1; // Default to page 1
         const limit = parseInt(req.query.limit) || 10; // Default to 10 items
         const skipIndex = (page - 1) * limit;

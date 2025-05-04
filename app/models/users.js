@@ -16,12 +16,22 @@ const UserSchema = new mongoose.Schema({
       points: { type: Number, default: 0 }
     },
     status: { type: String, enum: ['active', 'inactive', 'banned'], default: 'active' },
+    isStoreCreated: { type: Boolean, default: false },
+    isProfileComplete: { type: Boolean, default: false },
+    
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
     versionKey: false
 }
 );
+
+UserSchema.pre('save', function(next) {
+    if (this.role !== 'seller') {
+      this.isStoreCreated = undefined; // Remove field for non-sellers
+  }
+  next();
+  })
   
 const User =  mongoose.model('User', UserSchema)
 //export collection
