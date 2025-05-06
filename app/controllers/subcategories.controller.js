@@ -69,7 +69,7 @@ const getAllSubCategories = async (req, res) => {
 
     // Filter by category (from params)
     if (categoryId) {
-      query.category = new mongoose.Types.ObjectId(categoryId);
+      query.category = categoryId;
     }
 
     // Search by name
