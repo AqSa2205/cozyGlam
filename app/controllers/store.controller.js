@@ -57,10 +57,72 @@ exports.createStore = async (req, res) => {
   }
 };
 
+// exports.getAllStore = async (req, res) => {
+//   try {
+//     const { search, isActive, isOnline } = req.query;
+//     let query = {};
+
+//     // Optional filters
+//     if (isActive !== undefined) query.isActive = isActive === "true";
+//     if (isOnline !== undefined) query.isOnline = isOnline === "true";
+
+//     // Search on storeName or userId or user's name
+//     if (search) {
+//       const searchRegex = new RegExp(search, 'i');
+
+//       const matchedUsers = await User.find({
+//         $or: [
+//           { name: searchRegex },
+//           { _id: mongoose.Types.ObjectId.isValid(search) ? search : null }
+//         ]
+//       }).select('_id');
+//       // const userIds =  req.user.id;
+//       const userIds = matchedUsers.map(user => user._id);
+
+//       query.$or = [
+//         { storeName: searchRegex },
+//         { userId: { $in: userIds } }
+//       ];
+//     }
+    
+
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skipIndex = (page - 1) * limit;
+
+//     const stores = await Store.find(query)
+//       .populate('userId', 'name email phone_number')
+//       .sort({ createdAt: -1 })
+//       .skip(skipIndex)
+//       .limit(limit);
+
+//     const totalStore = await Store.countDocuments(query);
+//     const totalPages = Math.ceil(totalStore / limit);
+
+//     const message = stores.length === 0 ? "No stores found" : "Stores loaded successfully";
+
+//     return response.success(res, message, {
+//       stores,
+//       totalPages,
+//       currentPage: page,
+//       totalStore
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     return response.serverError(res, error.message, "Failed to load Stores");
+//   }
+// };
+
 exports.getAllStore = async (req, res) => {
   try {
     const { search, isActive, isOnline } = req.query;
     let query = {};
+
+    // If user is authenticated, only show their store
+    if (req.user && req.user.id) {
+      query.userId = req.user.id;
+    }
 
     // Optional filters
     if (isActive !== undefined) query.isActive = isActive === "true";
@@ -70,21 +132,33 @@ exports.getAllStore = async (req, res) => {
     if (search) {
       const searchRegex = new RegExp(search, 'i');
 
+      // Search users by name or ID
       const matchedUsers = await User.find({
         $or: [
           { name: searchRegex },
           { _id: mongoose.Types.ObjectId.isValid(search) ? search : null }
         ]
       }).select('_id');
-      // const userIds =  req.user.id;
+
       const userIds = matchedUsers.map(user => user._id);
 
-      query.$or = [
+      // Combine search conditions
+      const searchCondition = [
         { storeName: searchRegex },
         { userId: { $in: userIds } }
       ];
+
+      // Merge with user-specific filter if token exists
+      if (req.user && req.user.id) {
+        query.$and = [
+          { userId: req.user.id },
+          { $or: searchCondition }
+        ];
+      } else {
+        query.$or = searchCondition;
+      }
     }
-    
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skipIndex = (page - 1) * limit;
@@ -109,10 +183,9 @@ exports.getAllStore = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    return response.serverError(res, error.message, "Failed to load Stores");
+    return response.serverError(res, error.message || "Failed to load Stores");
   }
 };
-
 
 
 exports.updateStore = async (req, res) => {

@@ -4,6 +4,7 @@ let express = require('express');
 let router = express.Router();
 const user = require('./user.routes');
 const category_router = require('./categories.routes');
+const subcategory_router = require('./subcategories.routes');
 const product = require('./products.routes');
 const store = require('./store.routes');
 // const service = require('./service.routes');
@@ -20,6 +21,7 @@ const app = require('./app.routes');
 
 router.use('/users', user);
 router.use('/categories', category_router);
+router.use('/subcategories', subcategory_router);
 router.use('/products', product);
 router.use('/store', store);
 // router.use('/services', service);

@@ -295,3 +295,19 @@ module.exports.signup = async (req, res) => {
     return response.serverError(res, error.message, "Something bad happened! Try Again Later");
   }
 };
+module.exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // Assuming the user ID is extracted from the token and set in req.user
+    const user = await User.findById(userId).select("-password"); // Exclude password from the result
+
+    if (!user) {
+      return response.notFound(res, "User not found");
+    }
+
+    return response.success(res, "User profile retrieved successfully", {user});
+  } catch (error) {
+    console.log(error);
+    logger.error(`ip: ${req.ip}, url: ${req.url}, error: ${error.stack}`);
+    return response.serverError(res, "Something bad happened! Try Again Later");
+  }
+};
