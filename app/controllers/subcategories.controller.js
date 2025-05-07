@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const SubCategory = require("../models/subCategories");
 const response = require("../utils/responseHelpers");
 const { ROLE_IDS } = require("../utils/utility");
@@ -11,11 +12,22 @@ const createsubCategory = async (req, res) => {
   try {
     console.log(req.user);
     const { name, image, type, category } = req.body;
-    const subcategory = new SubCategory({ name, image: req.body.imageUrl, type, category });
+    const subcategory = new SubCategory({
+      name,
+      image: req.body.imageUrl,
+      type,
+      category,
+    });
     await subcategory.save();
-    return response.success(res, "Subategory created successfully", { subcategory });
+    return response.success(res, "Subategory created successfully", {
+      subcategory,
+    });
   } catch (error) {
-    return response.badRequest(res, error.message, "Sorry something went wrong.");
+    return response.badRequest(
+      res,
+      error.message,
+      "Sorry something went wrong."
+    );
   }
 };
 // const getAllSubCategories = async (req, res) => {
@@ -41,7 +53,7 @@ const createsubCategory = async (req, res) => {
 //      // Use a consistent structure for the response
 //     const message = subcategories.length === 0 ? "No categories found" : "Sub Categories loaded successfully";
 //     return response.success(res, message, { subcategories, totalPages, currentPage: page, totalSubCategory});
-    
+
 //   } catch (error) {
 //     console.log(error);
 //     return response.serverError(res, error.message, "Failed to load sub Categories");
@@ -83,20 +95,23 @@ const getAllSubCategories = async (req, res) => {
     const totalSubCategory = await SubCategory.countDocuments(query);
     const totalPages = Math.ceil(totalSubCategory / limit);
 
-    const message = subcategories.length === 0
-      ? "No subcategories found"
-      : "Subcategories loaded successfully";
+    const message =
+      subcategories.length === 0
+        ? "No subcategories found"
+        : "Subcategories loaded successfully";
 
     return response.success(res, message, {
       subcategories,
       totalPages,
       currentPage: page,
-      totalSubCategory
+      totalSubCategory,
     });
-
   } catch (error) {
     console.error(error);
-    return response.serverError(res, error.message || "Failed to load subcategories");
+    return response.serverError(
+      res,
+      error.message || "Failed to load subcategories"
+    );
   }
 };
 
@@ -108,17 +123,23 @@ const updateSubCategory = async (req, res) => {
         "You don't have permission to perform this action"
       );
     }
-    const subcategory = await SubCategory.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    
+    const subcategory = await SubCategory.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+      }
+    );
+
     if (!subcategory) {
       return response.notFound(
         res,
         `No Sub Category was found with the id of ${req.params.id}`
       );
     }
-    return response.success(res, "Sub Category updated successfully.", { subcategory });
+    return response.success(res, "Sub Category updated successfully.", {
+      subcategory,
+    });
   } catch (error) {
     response.serverError(
       res,
