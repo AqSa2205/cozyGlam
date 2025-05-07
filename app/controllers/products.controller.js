@@ -199,7 +199,7 @@ exports.getAllProductsSeller = async (req, res) => {
       const limit = parseInt(req.query.limit) || 10;
       const skip = (page - 1) * limit;
   
-      const { status, subcategory } = req.query;
+      const { status, subcategory, category } = req.query;
   
       if (!req.user || !req.user.id) {
         return response.validationError(res, 'Login required to access your products.');
@@ -214,6 +214,13 @@ exports.getAllProductsSeller = async (req, res) => {
       if (status) {
         filter.status = status;
       }
+
+      if (category) {
+        const categories = await Category.find({ name: { $regex: new RegExp(category, 'i') } }).select('_id');
+        const categoryIds = categories.map(c => c._id);
+        filter.categories = { $in: categoryIds };
+      }
+
       if (subcategory) {
         const subcategoryQuery = Array.isArray(subcategory)
           ? req.query.subcategory
