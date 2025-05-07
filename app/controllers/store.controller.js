@@ -190,7 +190,7 @@ exports.getAllStore = async (req, res) => {
 
 exports.updateStore = async (req, res) => {
   try {
-    const { userId } = req.user;
+    const userId = req.user.id;
     const updateData = req.body;
 
     const store = await Store.findOneAndUpdate(
@@ -199,8 +199,10 @@ exports.updateStore = async (req, res) => {
       { new: true }
     );
 
+    console.log(userId);
+
     if (!store) return response.notFound(res, 'Store not found');
-    return response.success(res, 'Store updated successfully', store);
+    return response.success(res, 'Store updated successfully', {store});
   } catch (error) {
     console.error(error);
     return response.serverError(res, 'Failed to update store');

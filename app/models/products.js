@@ -13,9 +13,8 @@ const ProductSchema = new mongoose.Schema(
     discount_price: { type: Number },
     inventory_count: { type: Number, default: 0 },
     categories: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-    subcategories: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" },
-    ],
+    subcategories: [{ type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" }],
+
     tags: [String],
     images: [String],
     ratings: {
@@ -36,7 +35,7 @@ const ProductSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "inactive", "out_of_stock"],
+      enum: ["active", "inactive", "out_of_stock", "draft"],
       default: "active",
     },
   },
