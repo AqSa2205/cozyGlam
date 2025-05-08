@@ -2,17 +2,16 @@ const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
   buyer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  seller_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+//   seller_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   products: [
     {
       product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
       title: String,
       quantity: Number,
-      price_per_unit: Number,
-      total_price: Number
+      price: Number,
+      seller_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     }
   ],
-  subtotal: Number,
   shipping_cost: Number,
   total_amount: Number,
   payment_status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
@@ -31,5 +30,5 @@ const orderSchema = new mongoose.Schema({
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
     versionKey: false
 });
-const Orders = mongoose.model('orders', orderSchema)
-module.exports = Orders;
+const Order = mongoose.model('orders', orderSchema)
+module.exports = Order;

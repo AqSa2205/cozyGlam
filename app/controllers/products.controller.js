@@ -116,8 +116,10 @@ exports.getAllProducts = async (req, res) => {
         title,
         description,
         seller,       // seller name
-        category,     // category name
-        subcategory,  // if needed later
+        category, 
+        category_id,    // category name
+        subcategory,// if needed later
+        subcategory_id, // if needed later
         userId,      // user ID for filtering
       } = req.query;
   
@@ -147,6 +149,17 @@ exports.getAllProducts = async (req, res) => {
           const categoryIds = categories.map(c => c._id);
           filter.categories = { $in: categoryIds };
         }
+        if(category_id){
+            const categories = await Category.find({ _id: category_id }).select('_id');
+            const categoryIds = categories.map(c => c._id);
+            filter.categories = { $in: categoryIds };
+
+        }
+        if (subcategory_id) {
+            const subcategories = await SubCategory.find({ _id: subcategory_id }).select('_id');
+            const subcategoryIds = subcategories.map(sc => sc._id);
+            filter.subcategories = { $in: subcategoryIds };
+          }
         if (subcategory) {
             const subcategoryQuery = Array.isArray(subcategory)
               ? req.query.subcategory
