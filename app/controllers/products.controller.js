@@ -1,23 +1,21 @@
-const Product = require('../models/products'); 
-const Category = require('../models/categories');
-const SubCategory = require('../models/subCategories');
-const Seller = require('../models/users');
-const response = require('../utils/responseHelpers'); 
-const mongoose = require('mongoose');
-
+const Product = require("../models/products");
+const Category = require("../models/categories");
+const SubCategory = require("../models/subCategories");
+const Seller = require("../models/users");
+const response = require("../utils/responseHelpers");
+const mongoose = require("mongoose");
 
 exports.createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
     product.seller_id = req.user.id; // Assuming you have the seller ID from the token
     await product.save();
-    return response.success(res, 'Product created successfully', {product});
+    return response.success(res, "Product created successfully", { product });
   } catch (error) {
     console.error(error);
-    return response.serverError(res, 'Failed to create product');
+    return response.serverError(res, "Failed to create product");
   }
 };
-
 
 // exports.getAllProducts = async (req, res) => {
 //     try {
@@ -41,7 +39,7 @@ exports.createProduct = async (req, res) => {
 //         ]
 //         };
 //         const products = await Product.find(query)
-//         .sort({ created_at: -1 }) 
+//         .sort({ created_at: -1 })
 //         .skip(skipIndex)
 //         .limit(limit)
 //         .populate('seller_id', 'name email')
@@ -55,16 +53,13 @@ exports.createProduct = async (req, res) => {
 //         totalPages,
 //         currentPage: page,
 //         pageSize: limit,
-        
+
 //         });
 //     } catch (error) {
 //         console.error(error);
 //         return response.serverError(res, 'Failed to fetch products');
 //     }
 // };
-  
-
-
 
 // exports.getAllProducts = async (req, res) => {
 //   try {
@@ -96,7 +91,7 @@ exports.createProduct = async (req, res) => {
 
 //     const products = await Product.find(filter)
 //       .populate('categories seller_id');
-    
+
 //     res.status(200).json(products);
 //   } catch (err) {
 //     console.error(err);
@@ -104,196 +99,207 @@ exports.createProduct = async (req, res) => {
 //   }
 // };
 
-
-
 exports.getAllProducts = async (req, res) => {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-  
-      const {
-        title,
-        description,
-        seller,       // seller name
-        category, 
-        category_id,    // category name
-        subcategory,// if needed later
-        subcategory_id, // if needed later
-        userId,      // user ID for filtering
-      } = req.query;
-  
-      const filter = {};
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-      if (userId === 'true') {
-        if (!req.user || !req.user._id) {
-          return response.unauthorized(res, 'Login required to access your products.');
-        }
-        filter.seller_id = req.user._id;
-        filter.is_active = true;
-      } else {
-        // Optional filters
-        if (title) {
-          filter.title = { $regex: new RegExp(title, 'i') };
-        }
-        if (description) {
-          filter.description = { $regex: new RegExp(description, 'i') };
-        }
-        if (seller) {
-          const sellers = await Seller.find({ name: { $regex: new RegExp(seller, 'i') } }).select('_id');
-          const sellerIds = sellers.map(s => s._id);
-          filter.seller_id = { $in: sellerIds };
-        }
-        if (category) {
-          const categories = await Category.find({ name: { $regex: new RegExp(category, 'i') } }).select('_id');
-          const categoryIds = categories.map(c => c._id);
-          filter.categories = { $in: categoryIds };
-        }
-        if(category_id){
-            const categories = await Category.find({ _id: category_id }).select('_id');
-            const categoryIds = categories.map(c => c._id);
-            filter.categories = { $in: categoryIds };
+    const {
+      title,
+      description,
+      seller, // seller name
+      category,
+      category_id, // category name
+      subcategory, // if needed later
+      subcategory_id, // if needed later
+      userId, // user ID for filtering
+    } = req.query;
 
-        }
-        if (subcategory_id) {
-            const subcategories = await SubCategory.find({ _id: subcategory_id }).select('_id');
-            const subcategoryIds = subcategories.map(sc => sc._id);
-            filter.subcategories = { $in: subcategoryIds };
-          }
-        if (subcategory) {
-            const subcategoryQuery = Array.isArray(subcategory)
-              ? req.query.subcategory
-              : req.query.subcategory.split(',');
-          
-            const subcategories = await SubCategory.find({
-              name: { $in: subcategoryQuery.map(name => new RegExp(name.trim(), 'i')) }
-            }).select('_id');
-          
-            const subcategoryIds = subcategories.map(sc => sc._id);
-            filter.subcategories = { $in: subcategoryIds };
-          }
-          
+    const filter = {};
+
+    if (userId === "true") {
+      if (!req.user || !req.user._id) {
+        return response.unauthorized(
+          res,
+          "Login required to access your products."
+        );
       }
-  
-  
-      // Add subcategory filtering if needed later
-  
-      const [products, totalProducts] = await Promise.all([
-        Product.find(filter)
-          .sort({ created_at: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate('seller_id', 'name email')
-          .populate('categories', 'name')
-          .populate('subcategories', 'name'),
-        Product.countDocuments(filter)
-      ]);
-  
-      const totalPages = Math.ceil(totalProducts / limit);
-  
-      return response.success(res, 'Product list fetched', {
-        products,
-        total: totalProducts,
-        totalPages,
-        currentPage: page,
-        pageSize: limit,
-      });
-  
-    } catch (error) {
-      console.error(error);
-      return response.serverError(res, 'Failed to fetch products');
-    }
-};
-  
-
-exports.getAllProductsSeller = async (req, res) => {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-  
-      const { status, subcategory, category } = req.query;
-  
-      if (!req.user || !req.user.id) {
-        return response.validationError(res, 'Login required to access your products.');
+      filter.seller_id = req.user._id;
+      filter.is_active = true;
+    } else {
+      // Optional filters
+      if (title) {
+        filter.title = { $regex: new RegExp(title, "i") };
       }
-  
-      const sellerId = req.user.id;
-  
-      let filter = {
-        seller_id: sellerId
-      };
-  
-      if (status) {
-        filter.status = status;
+      if (description) {
+        filter.description = { $regex: new RegExp(description, "i") };
       }
-
+      if (seller) {
+        const sellers = await Seller.find({
+          name: { $regex: new RegExp(seller, "i") },
+        }).select("_id");
+        const sellerIds = sellers.map((s) => s._id);
+        filter.seller_id = { $in: sellerIds };
+      }
       if (category) {
-        const categories = await Category.find({ name: { $regex: new RegExp(category, 'i') } }).select('_id');
-        const categoryIds = categories.map(c => c._id);
+        const categories = await Category.find({
+          name: { $regex: new RegExp(category, "i") },
+        }).select("_id");
+        const categoryIds = categories.map((c) => c._id);
         filter.categories = { $in: categoryIds };
       }
-
+      if (category_id) {
+        const categories = await Category.find({ _id: category_id }).select(
+          "_id"
+        );
+        const categoryIds = categories.map((c) => c._id);
+        filter.categories = { $in: categoryIds };
+      }
+      if (subcategory_id) {
+        const subcategories = await SubCategory.find({
+          _id: subcategory_id,
+        }).select("_id");
+        const subcategoryIds = subcategories.map((sc) => sc._id);
+        filter.subcategories = { $in: subcategoryIds };
+      }
       if (subcategory) {
         const subcategoryQuery = Array.isArray(subcategory)
           ? req.query.subcategory
-          : req.query.subcategory.split(',');
-      
+          : req.query.subcategory.split(",");
+
         const subcategories = await SubCategory.find({
-          name: { $in: subcategoryQuery.map(name => new RegExp(name.trim(), 'i')) }
-        }).select('_id');
-      
-        const subcategoryIds = subcategories.map(sc => sc._id);
+          name: {
+            $in: subcategoryQuery.map((name) => new RegExp(name.trim(), "i")),
+          },
+        }).select("_id");
+
+        const subcategoryIds = subcategories.map((sc) => sc._id);
         filter.subcategories = { $in: subcategoryIds };
       }
-      console.log( filter);
-      const totalProducts = await Product.countDocuments(filter);
-  
-      if (totalProducts === 0) {
-        return response.success(res, "No products found.");
-      }
-  
-      const products = await Product.find(filter)
+    }
+
+    // Add subcategory filtering if needed later
+
+    const [products, totalProducts] = await Promise.all([
+      Product.find(filter)
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('seller_id', 'name email')
-        .populate('categories', 'name')
-        .populate('subcategories', 'name');
+        .populate("seller_id", "name email")
+        .populate("categories", "name")
+        .populate("subcategories", "name"),
+      Product.countDocuments(filter),
+    ]);
 
-  
-      const totalPages = Math.ceil(totalProducts / limit);
-  
-      return response.success(res, 'Product list fetched', {
-        products,
-        total: totalProducts,
-        totalPages,
-        currentPage: page,
-        pageSize: limit,
-      });
-  
-    } catch (error) {
-      console.error(error);
-      return response.serverError(res, 'Failed to fetch products');
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    return response.success(res, "Product list fetched", {
+      products,
+      total: totalProducts,
+      totalPages,
+      currentPage: page,
+      pageSize: limit,
+    });
+  } catch (error) {
+    console.error(error);
+    return response.serverError(res, "Failed to fetch products");
+  }
+};
+
+exports.getAllProductsSeller = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const { status, subcategory, category } = req.query;
+
+    if (!req.user || !req.user.id) {
+      return response.validationError(
+        res,
+        "Login required to access your products."
+      );
     }
-  };
-  
+
+    const sellerId = req.user.id;
+
+    let filter = {
+      seller_id: sellerId,
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (category) {
+      const categories = await Category.find({
+        name: { $regex: new RegExp(category, "i") },
+      }).select("_id");
+      const categoryIds = categories.map((c) => c._id);
+      filter.categories = { $in: categoryIds };
+    }
+
+    if (subcategory) {
+      const subcategoryQuery = Array.isArray(subcategory)
+        ? req.query.subcategory
+        : req.query.subcategory.split(",");
+
+      const subcategories = await SubCategory.find({
+        name: {
+          $in: subcategoryQuery.map((name) => new RegExp(name.trim(), "i")),
+        },
+      }).select("_id");
+
+      const subcategoryIds = subcategories.map((sc) => sc._id);
+      filter.subcategories = { $in: subcategoryIds };
+    }
+    console.log(filter);
+    const totalProducts = await Product.countDocuments(filter);
+
+    if (totalProducts === 0) {
+      return response.success(res, "No products found.");
+    }
+
+    const products = await Product.find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("seller_id", "name email")
+      .populate("categories", "name")
+      .populate("subcategories", "name");
+
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    return response.success(res, "Product list fetched", {
+      products,
+      total: totalProducts,
+      totalPages,
+      currentPage: page,
+      pageSize: limit,
+    });
+  } catch (error) {
+    console.error(error);
+    return response.serverError(res, "Failed to fetch products");
+  }
+};
 
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
     const product = await Product.findById(id)
-      .populate('seller_id', 'name email')
-      .populate('categories', 'name')
-      .populate('subcategories', 'name');
+      .populate("seller_id", "name email")
+      .populate("categories", "name")
+      .populate("subcategories", "name")
+      .lean();
 
-    if (!product) return response.notFound(res, 'Product not found');
+    if (!product) return response.notFound(res, "Product not found");
 
-    return response.success(res, 'Product fetched successfully', product);
+    return response.success(res, "Product fetched successfully", product);
   } catch (error) {
     console.error(error);
-    return response.serverError(res, 'Failed to fetch product');
+    return response.serverError(res, "Failed to fetch product");
   }
 };
 
@@ -306,12 +312,14 @@ exports.updateProduct = async (req, res) => {
       new: true,
     });
 
-    if (!updatedProduct) return response.notFound(res, 'Product not found');
+    if (!updatedProduct) return response.notFound(res, "Product not found");
 
-    return response.success(res, 'Product updated successfully', {updatedProduct});
+    return response.success(res, "Product updated successfully", {
+      updatedProduct,
+    });
   } catch (error) {
     console.error(error);
-    return response.serverError(res, 'Failed to update product');
+    return response.serverError(res, "Failed to update product");
   }
 };
 
@@ -322,11 +330,11 @@ exports.deleteProduct = async (req, res) => {
 
     const deletedProduct = await Product.findByIdAndDelete(id);
 
-    if (!deletedProduct) return response.notFound(res, 'Product not found');
+    if (!deletedProduct) return response.notFound(res, "Product not found");
 
-    return response.success(res, 'Product deleted successfully');
+    return response.success(res, "Product deleted successfully");
   } catch (error) {
     console.error(error);
-    return response.serverError(res, 'Failed to delete product');
+    return response.serverError(res, "Failed to delete product");
   }
 };
