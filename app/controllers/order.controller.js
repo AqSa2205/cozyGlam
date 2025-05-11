@@ -27,12 +27,13 @@ exports.createOrder = async (req, res) => {
           product_id: product._id,
           title: product.title,
           quantity: item.quantity,
-          price_per_unit: product.price,
+          price: product.price,
           total_price: product.price * item.quantity,
-          seller_id: product.seller_id,
+          seller_id: product.seller_id._id,
         };
       })
     );
+    console.log(populatedProducts);
 
     // const seller_id = populatedProducts[0].seller_id; // assuming all products are from same seller
     const subtotal = populatedProducts.reduce((sum, p) => sum + p.total_price, 0);
@@ -41,7 +42,7 @@ exports.createOrder = async (req, res) => {
 
     const order = new Orders({
       buyer_id,
-      products: populatedProducts.map(({ seller_id, ...rest }) => rest),
+      products: populatedProducts,      
       subtotal,
       shipping_cost,
       total_amount,
@@ -49,7 +50,7 @@ exports.createOrder = async (req, res) => {
     //   transaction_id,
       shipping_address
     });
-
+    console.log(order);
     await order.save();
 
     // Notify seller logic here (email, socket, etc.)
@@ -62,10 +63,9 @@ exports.createOrder = async (req, res) => {
 };
 
 
-exports.getOrders = async (req, res) => {
+exports.getOrders_customer = async (req, res) => {
     try {
       const userId = req.user.id;
-    //   const { role, id: userId } = user;
   
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
@@ -78,7 +78,7 @@ exports.getOrders = async (req, res) => {
       } else if (req.user.role === 'customer') {
         query.buyer_id = userId;
       } else {
-        return response.error(res, 'Unauthorized role for fetching orders', 403);
+        return response.badRequest(res, 'Unauthorized role for fetching orders', 404);
       }
   
       const [orders, total] = await Promise.all([
@@ -103,7 +103,53 @@ exports.getOrders = async (req, res) => {
       console.error(error);
       return response.serverError(res, error.message, 'Failed to get orders');
     }
+};
+
+exports.getOrders_seller = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+  
+      let query = {};
+  
+      if (req.user.role === 'seller') {
+        // Match orders that include products from this seller
+        query['products.seller_id'] = userId;
+      } else if (req.user.role === 'customer') {
+        query.buyer_id = userId;
+      } else {
+        return response.badRequest(res, 'Unauthorized role for fetching orders');
+      }
+  
+      const [orders, total] = await Promise.all([
+        Orders.find(query)
+          .sort({ created_at: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('products.product_id', 'title price') // optional
+          .populate('buyer_id', 'name email') // optional
+          .populate('products.seller_id', 'name email'),
+        Orders.countDocuments(query)
+      ]);
+  
+      const totalPages = Math.ceil(total / limit);
+  
+      return response.success(res, 'Orders fetched successfully', {
+        orders,
+        total,
+        totalPages,
+        currentPage: page,
+        pageSize: limit
+      });
+  
+    } catch (error) {
+      console.error(error);
+      return response.serverError(res, error.message, 'Failed to get orders');
+    }
   };
+  
   
 
 exports.getOrderById = async (req, res) => {

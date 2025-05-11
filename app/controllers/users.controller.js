@@ -64,7 +64,7 @@ module.exports.login = async (req, res) => {
           phone_number: user.phone_number,
           email: user.email,
           id: user._id,
-          role_id: user.roles,
+          role: user.role,
         },
         process.env.SECRET_KEY
       );
@@ -215,6 +215,88 @@ module.exports.loginAdmin = async (req, res) => {
   }
 };
 
+// module.exports.signup = async (req, res) => {
+//   try {
+//     let {
+//       name,
+//       email,
+//       password,
+//       phone_number,
+//       role,
+//      // fcm_token,
+//       // image,
+//       // country,
+//       // city,
+//       // state,
+//       // additional,
+//     } = req.body;
+
+//     // Validate and process inputs
+//     if (!email || !password || !phone_number || !role) {
+//       return response.badRequest(
+//         res,
+//         "Email, Password, and Phone Number are required"
+//       );
+//     }
+
+//     email = email.toLowerCase().trim();
+//     phone_number = phone_number.trim();
+
+//     var roleId;
+//     console.log(role);
+//     switch (role) {
+//       case "seller":
+//         roleId = ROLE_IDS.seller;
+//         break;
+//       case "customer":
+//         roleId = ROLE_IDS.customer;
+//         break;
+//       case "admin":
+//         roleId = ROLE_IDS.admin;
+//         break;
+//       default:
+//         return response.badRequest(res, "Invalid role name");
+//     }
+
+//     // Encrypt the password and create new user
+//     const encryptedPassword = await bcrypt.hash(
+//       password,
+//       await bcrypt.genSalt(10)
+//     );
+
+//     const newUser = new User({
+//       name,
+//       email,
+//       password: encryptedPassword,
+//       role: roleId, // Save the role ID
+//       phone_number: phone_number,
+//       token: token
+//     });
+//     await newUser.save();
+//     console.log(newUser);
+//     // let fcmObj = {
+//     //   user_id: newUser._id,
+//     //   //device_uid: req.headers.deviceid,
+//     //   token: req.body.fcm_token,
+//     // };
+//     // let fcm = new FcmToken(fcmObj);
+//     // await fcm.save();
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { email: newUser.email, id: newUser._id, role: roleId },
+//       process.env.SECRET_KEY,
+//       { expiresIn: "30d" }
+//     );
+//     console.log(token);
+//     return response.success(res, "Signup Successful", { user: newUser });
+//   } catch (error) {
+//     console.log(error.message);
+//     logger.error(`ip: ${req.ip}, url: ${req.url}, error: ${error.stack}`);
+//     return response.serverError(res, error.message, "Something bad happened! Try Again Later");
+//   }
+// };
+
 module.exports.signup = async (req, res) => {
   try {
     let {
@@ -223,15 +305,8 @@ module.exports.signup = async (req, res) => {
       password,
       phone_number,
       role,
-     // fcm_token,
-      // image,
-      // country,
-      // city,
-      // state,
-      // additional,
     } = req.body;
 
-    // Validate and process inputs
     if (!email || !password || !phone_number || !role) {
       return response.badRequest(
         res,
@@ -242,8 +317,7 @@ module.exports.signup = async (req, res) => {
     email = email.toLowerCase().trim();
     phone_number = phone_number.trim();
 
-    var roleId;
-    console.log(role);
+    let roleId;
     switch (role) {
       case "seller":
         roleId = ROLE_IDS.seller;
@@ -258,43 +332,37 @@ module.exports.signup = async (req, res) => {
         return response.badRequest(res, "Invalid role name");
     }
 
-    // Encrypt the password and create new user
-    const encryptedPassword = await bcrypt.hash(
-      password,
-      await bcrypt.genSalt(10)
-    );
+    const encryptedPassword = await bcrypt.hash(password, await bcrypt.genSalt(10));
 
     const newUser = new User({
       name,
       email,
       password: encryptedPassword,
-      role: roleId, // Save the role ID
-      phone_number: phone_number,
+      role: roleId,
+      phone_number: phone_number
     });
-    await newUser.save();
-    console.log(newUser);
-    // let fcmObj = {
-    //   user_id: newUser._id,
-    //   //device_uid: req.headers.deviceid,
-    //   token: req.body.fcm_token,
-    // };
-    // let fcm = new FcmToken(fcmObj);
-    // await fcm.save();
 
-    // Generate JWT token
+    await newUser.save();
+
     const token = jwt.sign(
       { email: newUser.email, id: newUser._id, role: roleId },
       process.env.SECRET_KEY,
       { expiresIn: "30d" }
     );
-    console.log(token);
-    return response.success(res, "Signup Successful", { user: newUser, token });
+
+    // Convert Mongoose document to plain object so you can add custom fields
+    const userWithToken = newUser.toObject();
+    userWithToken.token = token;
+
+    return response.success(res, "Signup Successful", { user: userWithToken });
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
     logger.error(`ip: ${req.ip}, url: ${req.url}, error: ${error.stack}`);
     return response.serverError(res, error.message, "Something bad happened! Try Again Later");
   }
 };
+
+
 module.exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.id; // Assuming the user ID is extracted from the token and set in req.user

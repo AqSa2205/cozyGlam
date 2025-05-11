@@ -4,19 +4,36 @@ const SubCategory = require('../models/subCategories');
 const Seller = require('../models/users');
 const response = require('../utils/responseHelpers'); 
 const mongoose = require('mongoose');
-
+const Store = require('../models/store'); // import your Store model
 
 exports.createProduct = async (req, res) => {
   try {
-    const product = new Product(req.body);
-    product.seller_id = req.user.id; // Assuming you have the seller ID from the token
+    const sellerId = req.user.id;
+
+    // Find the store associated with the seller
+    const store = await Store.findOne({ userId : sellerId });
+
+    if (!store) {
+      return response.notFound(res, 'Store not found for the seller');
+    }
+
+    // Create product and assign seller_id and store_id
+    const product = new Product({
+      ...req.body,
+      seller_id: sellerId,
+      store_id: store._id
+    });
+
     await product.save();
-    return response.success(res, 'Product created successfully', {product});
+
+    return response.success(res, 'Product created successfully', { product });
+
   } catch (error) {
     console.error(error);
     return response.serverError(res, 'Failed to create product');
   }
 };
+
 
 
 // exports.getAllProducts = async (req, res) => {
@@ -116,6 +133,7 @@ exports.getAllProducts = async (req, res) => {
         title,
         description,
         seller,       // seller name
+        store_id,    // store ID for filtering
         category, 
         category_id,    // category name
         subcategory,// if needed later
@@ -143,6 +161,11 @@ exports.getAllProducts = async (req, res) => {
           const sellers = await Seller.find({ name: { $regex: new RegExp(seller, 'i') } }).select('_id');
           const sellerIds = sellers.map(s => s._id);
           filter.seller_id = { $in: sellerIds };
+        }
+        if (store_id) {
+          const stores = await Store.find({ _id: store_id }).select('_id');
+          const storeIds = stores.map(s => s._id);
+          filter.store_id = { $in: storeIds };
         }
         if (category) {
           const categories = await Category.find({ name: { $regex: new RegExp(category, 'i') } }).select('_id');
@@ -184,6 +207,7 @@ exports.getAllProducts = async (req, res) => {
           .skip(skip)
           .limit(limit)
           .populate('seller_id', 'name email')
+          .populate('store_id', 'storeName')
           .populate('categories', 'name')
           .populate('subcategories', 'name'),
         Product.countDocuments(filter)

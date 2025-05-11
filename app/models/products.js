@@ -7,6 +7,7 @@ const User = require("./users");
 const ProductSchema = new mongoose.Schema(
   {
     seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    store_id: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },
     title: { type: String, required: true },
     description: { type: String },
     price: { type: Number, required: true },

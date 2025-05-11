@@ -1,5 +1,6 @@
 const Store = require('../models/store');
 const User = require('../models/users');
+const Product = require('../models/products');
 const response = require('../utils/responseHelpers');
 const mongoose = require('mongoose');
 
@@ -57,10 +58,16 @@ exports.createStore = async (req, res) => {
   }
 };
 
+
 // exports.getAllStore = async (req, res) => {
 //   try {
 //     const { search, isActive, isOnline } = req.query;
 //     let query = {};
+
+//     // If user is authenticated, only show their store
+//     if (req.user && req.user.id) {
+//       query.userId = req.user.id;
+//     }
 
 //     // Optional filters
 //     if (isActive !== undefined) query.isActive = isActive === "true";
@@ -70,21 +77,35 @@ exports.createStore = async (req, res) => {
 //     if (search) {
 //       const searchRegex = new RegExp(search, 'i');
 
+//       // Search users by name or ID
 //       const matchedUsers = await User.find({
 //         $or: [
 //           { name: searchRegex },
 //           { _id: mongoose.Types.ObjectId.isValid(search) ? search : null }
 //         ]
 //       }).select('_id');
-//       // const userIds =  req.user.id;
+
 //       const userIds = matchedUsers.map(user => user._id);
 
-//       query.$or = [
+//       // Combine search conditions
+//       const searchCondition = [
 //         { storeName: searchRegex },
 //         { userId: { $in: userIds } }
 //       ];
+
+//       // Merge with user-specific filter if token exists
+//       if (req.user && req.user.id) {
+//         query.$and = [
+//           { userId: req.user.id },
+//           { $or: searchCondition }
+//         ];
+//       } else {
+//         query.$or = searchCondition;
+//       }
 //     }
-    
+
+//     // adding product count for the stores
+
 
 //     const page = parseInt(req.query.page) || 1;
 //     const limit = parseInt(req.query.limit) || 10;
@@ -110,29 +131,25 @@ exports.createStore = async (req, res) => {
 
 //   } catch (error) {
 //     console.error(error);
-//     return response.serverError(res, error.message, "Failed to load Stores");
+//     return response.serverError(res, error.message || "Failed to load Stores");
 //   }
 // };
+
 
 exports.getAllStore = async (req, res) => {
   try {
     const { search, isActive, isOnline } = req.query;
     let query = {};
 
-    // If user is authenticated, only show their store
     if (req.user && req.user.id) {
       query.userId = req.user.id;
     }
 
-    // Optional filters
     if (isActive !== undefined) query.isActive = isActive === "true";
     if (isOnline !== undefined) query.isOnline = isOnline === "true";
 
-    // Search on storeName or userId or user's name
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-
-      // Search users by name or ID
       const matchedUsers = await User.find({
         $or: [
           { name: searchRegex },
@@ -141,14 +158,11 @@ exports.getAllStore = async (req, res) => {
       }).select('_id');
 
       const userIds = matchedUsers.map(user => user._id);
-
-      // Combine search conditions
       const searchCondition = [
         { storeName: searchRegex },
         { userId: { $in: userIds } }
       ];
 
-      // Merge with user-specific filter if token exists
       if (req.user && req.user.id) {
         query.$and = [
           { userId: req.user.id },
@@ -169,13 +183,23 @@ exports.getAllStore = async (req, res) => {
       .skip(skipIndex)
       .limit(limit);
 
+    // Get product count for each store
+    const storeWithProductCount = await Promise.all(
+      stores.map(async (store) => {
+        const productCount = await Product.countDocuments({ store_id: store._id });
+        return {
+          ...store.toObject(),
+          productCount
+        };
+      })
+    );
+
     const totalStore = await Store.countDocuments(query);
     const totalPages = Math.ceil(totalStore / limit);
-
     const message = stores.length === 0 ? "No stores found" : "Stores loaded successfully";
 
     return response.success(res, message, {
-      stores,
+      stores: storeWithProductCount,
       totalPages,
       currentPage: page,
       totalStore
