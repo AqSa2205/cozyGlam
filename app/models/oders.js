@@ -15,7 +15,7 @@ const orderSchema = new mongoose.Schema({
   shipping_cost: Number,
   total_amount: Number,
   payment_status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
-  order_status: { type: String, enum: ['pending', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
+  order_status: { type: String, enum: ['pending','accepted','shipped', 'delivered', 'cancelled'], default: 'pending' },
   shipping_address: {
     street: String,
     city: String,
@@ -23,7 +23,7 @@ const orderSchema = new mongoose.Schema({
     zip_code: String,
     country: String
   },
-  payment_method: { type: String, enum: ['COD', 'credit_card', 'paypal', 'stripe'] },
+  payment_method: { type: String, enum: ['COD', 'credit_card', 'paypal', 'klarna', 'google_pay'] },
   transaction_id: String,
 },
 {

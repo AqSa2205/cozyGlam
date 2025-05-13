@@ -18,6 +18,7 @@ app.engine("html", require("./app/views/indexView"));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/invoices", express.static(path.join(__dirname, "invoices")));
 
 app.use(
   cors({

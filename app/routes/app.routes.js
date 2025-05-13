@@ -4,9 +4,9 @@ const verifyToken = require("../middleware/auth");
 const route = express.Router();
 const {upload} = require('../utils/imageUpload');
 
-//const { handleImageUpload, handleFileUpload } = require('../controllers/app.controller');
 
 route.post('/uploadImage',[ upload.single('image')], ctrl.handleImageUpload);
+route.post('/uploadFile',[ upload.single('file')], ctrl.handleFileUpload);
 
 module.exports = route;
 

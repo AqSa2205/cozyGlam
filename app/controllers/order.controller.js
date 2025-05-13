@@ -1,7 +1,11 @@
 const Orders = require('../models/oders');
 const Product = require('../models/products');
+const store = require('../models/store');
 const User = require('../models/users');
+const generateInvoice = require('../utils/generateInvoice');
 const response = require('../utils/responseHelpers');
+
+// customers flow
 
 exports.createOrder = async (req, res) => {
   try {
@@ -30,6 +34,7 @@ exports.createOrder = async (req, res) => {
           price: product.price,
           total_price: product.price * item.quantity,
           seller_id: product.seller_id._id,
+          store_id: product.store_id,
         };
       })
     );
@@ -61,7 +66,6 @@ exports.createOrder = async (req, res) => {
     return response.serverError(res, error.message, 'Failed to place order');
   }
 };
-
 
 exports.getOrders_customer = async (req, res) => {
     try {
@@ -104,6 +108,32 @@ exports.getOrders_customer = async (req, res) => {
       return response.serverError(res, error.message, 'Failed to get orders');
     }
 };
+
+exports.completePayment = async (req, res) => {
+  try {
+    const orderId = req.body.orderId;
+    const order = await Orders.findById(orderId).populate('buyer_id');
+    if (!order) return response.notFound(res, "Order not found");
+
+    order.payment_status = 'paid';
+    await order.save();
+
+    // Generate PDF
+    const invoicePath = `invoices/invoice_${order._id}.pdf`;
+    generateInvoice(order, order.buyer_id, invoicePath);
+
+    return response.success(res, "Payment completed & invoice generated", {
+      invoice_url: `${req.protocol}://${req.get('host')}/${invoicePath}`
+    });
+
+  } catch (err) {
+    console.error(err);
+    return response.serverError(res, err.message || "Failed to complete payment");
+  }
+};
+
+
+//selller flow
 
 exports.getOrders_seller = async (req, res) => {
     try {
@@ -148,9 +178,7 @@ exports.getOrders_seller = async (req, res) => {
       console.error(error);
       return response.serverError(res, error.message, 'Failed to get orders');
     }
-  };
-  
-  
+};
 
 exports.getOrderById = async (req, res) => {
   try {
@@ -163,6 +191,64 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
+exports.acceptOrder = async (req, res) => {
+    try {
+      const sellerId = req.user.id;
+      const orderId = req.query.orderId;
+  
+      if (req.user.role !== 'seller') {
+        return response.authError(res, "Only sellers can accept orders.");
+      }
+  
+      const order = await Orders.findById(orderId);
+      if (!order) {
+        return response.notFound(res, "Order not found.");
+      }
+  
+      let sellerHasProduct = false;
+  
+      for (let item of order.products) {
+        if (item.seller_id.toString() === sellerId) {
+          sellerHasProduct = true;
+  
+          const product = await Product.findById(item.product_id);
+          if (!product) {
+            return response.notFound(res, `Product with ID ${item.product_id} not found.`);
+          }
+  
+          if (product.quantity < item.quantity) {
+            return response.badRequest(res, `Insufficient stock for ${product.title}`);
+          }
+  
+          product.quantity -= item.quantity;
+          await product.save();
+  
+          item.status = "accepted";
+        }
+      }
+  
+      if (!sellerHasProduct) {
+        return response.badRequest(res, "You are not authorized to accept this order.");
+      }
+
+      const allAccepted = order.products.every((item) => item.status === "accepted");
+      if (allAccepted) {
+        order.order_status = "accepted"; // ✅ set the order_status field
+      }
+  
+      await order.save();
+  
+      return response.success(res, "Order accepted and stock updated", {
+        orderId: order._id,
+        updated: true
+      });
+  
+    } catch (error) {
+      console.error(error);
+      return response.serverError(res, error.message || "Failed to accept order");
+    }
+};
+  
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { order_status } = req.body;
